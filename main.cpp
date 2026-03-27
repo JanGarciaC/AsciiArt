@@ -18,6 +18,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -60,59 +61,47 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    float aspectRatio = 0.5;
-    int newHeight = (height * newWidth / width) * aspectRatio;
-
-    int xScale = width / newWidth;
-    int yScale = height / newHeight;
-
-    if (xScale < 1) xScale = 1;
-    if (yScale < 1) yScale = 1;
+    float charAspect = 2.0;
+    int newHeight = static_cast<int>(round((height / (float)width) * newWidth / charAspect));
 
     ofstream outFile;
     if (saveToFile) {
         string outputName = filename;
-
         size_t dotPos = outputName.find_last_of('.');
-        if (dotPos != string::npos) {
-            outputName = outputName.substr(0, dotPos);
-        }
-
+        if (dotPos != string::npos) outputName = outputName.substr(0, dotPos);
         outputName += ".txt";
 
         outFile.open(outputName);
         if (!outFile) {
-            cout << "Error loadign file\n";
+            cout << "Error opening file\n";
             return 1;
         }
     }
 
-    for (int y = 0; y < height; y += yScale) {
-        for (int x = 0; x < width; x += xScale) {
+    for (int y = 0; y < newHeight; y++) {
+        for (int x = 0; x < newWidth; x++) {
 
-            int idx = (y * width + x) * channels;
+            int origX = static_cast<int>((x / (float)newWidth) * width);
+            int origY = static_cast<int>((y / (float)newHeight) * height);
+
+            int idx = (origY * width + origX) * channels;
 
             int r = img[idx];
             int g = img[idx + 1];
             int b = img[idx + 2];
 
-            int gray = 0.299 * r + 0.587 * g + 0.114 * b;
+            int gray = static_cast<int>(0.299 * r + 0.587 * g + 0.114 * b);
 
-            gray = (gray - 128) * 1.5 + 128;
+            gray = static_cast<int>((gray - 128) * 1.5 + 128);
             if (gray < 0) gray = 0;
             if (gray > 255) gray = 255;
 
             int index = ((255 - gray) * (asciiChars.size() - 1)) / 255;
-
             char c = asciiChars[index];
 
             cout << c;
-
-            if (saveToFile) {
-                outFile << c;
-            }
+            if (saveToFile) outFile << c;
         }
-
         cout << endl;
         if (saveToFile) outFile << endl;
     }
